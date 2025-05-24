@@ -1,2 +1,2 @@
-# markdown-editor
+# Markdown Editor
 A WYSIWYG Markdown Editor

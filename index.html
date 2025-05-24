@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Editor</title>
+    <style>
+:root {
+    --bg-color: #f0f0f0;
+    --container-bg: #ffffff;
+    --header-bg: #2c2c2c;
+    --toolbar-bg: #e9e9e9;
+    --editor-bg: #ffffff;
+    --editor-border-color: #cccccc;
+    --editor-focus-border-color: #555555;
+    --text-color-dark: #333333;
+    --text-color-light: #f5f5f5;
+    --text-color-muted: #777777;
+    --button-bg: #dddddd;
+    --button-hover-bg: #cccccc;
+    --button-active-bg: #bbbbbb;
+    --button-text-color: #333333;
+    --accent-color: #4a4a4a;
+    --code-bg: #e0e0e0;
+    --code-text-color: #333333;
+    --border-radius-main: 8px;
+    --border-radius-large: 12px;
+    --box-shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --box-shadow-medium: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background-color: var(--bg-color);
+    min-height: 100vh;
+    padding: 20px;
+    color: var(--text-color-dark);
+}
+
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    background: var(--container-bg);
+    border-radius: var(--border-radius-large);
+    overflow: hidden;
+    box-shadow: var(--box-shadow-medium);
+    border: 1px solid #dcdcdc;
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 40px);
+}
+
+.editor-container {
+    padding: 30px;
+    background-color: var(--container-bg);
+    flex: 1;
+}
+
+.statusbar {
+    background: var(--header-bg);
+    color: var(--text-color-light);
+    padding: 12px 25px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    border-top: 1px solid var(--editor-border-color);
+}
+
+.statusbar h1 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 0;
+    white-space: nowrap;
+}
+
+.statusbar p {
+    opacity: 0.8;
+    font-size: 0.85rem;
+    margin: 0;
+    white-space: nowrap;
+}
+
+.statusbar .toolbar {
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin-left: auto;
+    display: flex;
+    gap: 8px;
+}
+
+.statusbar .toolbar button {
+    background-color: var(--button-bg);
+    color: var(--button-text-color);
+    border: 1px solid #b0b0b0;
+    padding: 6px 12px;
+    border-radius: var(--border-radius-main);
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    white-space: nowrap;
+}
+
+#editor {
+    width: 100%;
+    min-height: 450px;
+    border: 1px solid var(--editor-border-color);
+    border-radius: var(--border-radius-main);
+    padding: 20px;
+    font-size: 16px;
+    line-height: 1.7;
+    background: var(--editor-bg);
+    outline: none;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: var(--box-shadow-soft);
+}
+
+#editor:empty::before {
+    content: attr(data-placeholder);
+    color: var(--text-color-muted);
+    font-style: italic;
+    position: absolute;
+    pointer-events: none;
+}
+
+#editor h1, #editor h2, #editor h3, #editor h4, #editor h5, #editor h6 {
+    margin: 1.2em 0 0.8em 0;
+    color: var(--text-color-dark);
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+#editor h1 { font-size: 2.2em; border-bottom: 1px solid #eee; padding-bottom: 0.3em;}
+#editor h2 { font-size: 1.8em; border-bottom: 1px solid #eee; padding-bottom: 0.3em;}
+#editor h3 { font-size: 1.5em; }
+#editor h4 { font-size: 1.25em; }
+#editor h5 { font-size: 1.1em; }
+#editor h6 { font-size: 1em; color: var(--text-color-muted); }
+
+#editor strong {
+    font-weight: 700;
+    color: var(--text-color-dark);
+}
+
+#editor em {
+    font-style: italic;
+    color: #444444;
+}
+
+#editor u {
+    text-decoration: underline;
+    text-decoration-color: var(--accent-color);
+    text-decoration-thickness: 1.5px;
+}
+
+#editor ul, #editor ol {
+    margin: 1em 0;
+    padding-left: 25px;
+}
+
+#editor li {
+    margin: 0.5em 0;
+}
+
+#editor input[type="checkbox"] {
+    margin-right: 8px;
+    transform: scale(1.1);
+    accent-color: var(--accent-color);
+}
+
+#editor a {
+    color: var(--accent-color);
+    text-decoration: none;
+    border-bottom: 1.5px solid var(--accent-color);
+    transition: color 0.2s ease, border-bottom-color 0.2s ease;
+}
+
+#editor a:hover {
+    color: #000000;
+    border-bottom-color: #000000;
+}
+
+#editor blockquote {
+    border-left: 3px solid var(--accent-color);
+    margin: 1.5em 0;
+    padding: 10px 20px;
+    background: #f9f9f9;
+    color: #555555;
+    font-style: italic;
+    border-radius: 0 var(--border-radius-main) var(--border-radius-main) 0;
+}
+
+#editor img {
+    max-width: 100%;
+    height: auto;
+    margin: 1em 0;
+    border-radius: var(--border-radius-main);
+    box-shadow: var(--box-shadow-soft);
+    border: 1px solid #ddd;
+}
+
+#editor code {
+    background: var(--code-bg);
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+    font-size: 0.9em;
+    color: var(--code-text-color);
+    border: 1px solid #d0d0d0;
+}
+
+.syntax-dropdown {
+    display: none;
+    position: fixed;
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%);
+    background: var(--container-bg);
+    border: 1px solid var(--editor-border-color);
+    border-radius: var(--border-radius-large);
+    padding: 20px;
+    box-shadow: var(--box-shadow-medium);
+    min-width: 300px;
+    max-height: 75vh;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.syntax-dropdown.show {
+    display: block;
+    animation: fadeInRight 0.3s ease-out;
+}
+
+@keyframes fadeInRight {
+    from {
+        opacity: 0;
+        transform: translateY(-50%) translateX(15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(-50%) translateX(0);
+    }
+}
+
+.syntax-dropdown h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+    color: var(--text-color-dark);
+    font-weight: 600;
+    border-bottom: 1px solid var(--editor-border-color);
+    padding-bottom: 10px;
+}
+
+.syntax-dropdown p {
+    margin-bottom: 10px;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    padding: 8px 10px;
+    background: #f7f7f7;
+    border-radius: var(--border-radius-main);
+    border-left: 3px solid var(--accent-color);
+}
+
+.syntax-dropdown strong {
+    color: var(--accent-color);
+    font-weight: 600;
+}
+
+.syntax-dropdown code {
+    background: #e0e0e0;
+    padding: 2px 5px;
+    border-radius: 3px;
+    font-family: 'SF Mono', Monaco, monospace;
+    font-size: 0.8em;
+    color: var(--text-color-dark);
+}
+
+#editor::-webkit-scrollbar,
+.syntax-dropdown::-webkit-scrollbar {
+    width: 8px;
+}
+
+#editor::-webkit-scrollbar-track,
+.syntax-dropdown::-webkit-scrollbar-track {
+    background: #efefef;
+    border-radius: 4px;
+}
+
+#editor::-webkit-scrollbar-thumb,
+.syntax-dropdown::-webkit-scrollbar-thumb {
+    background: #b0b0b0;
+    border-radius: 4px;
+}
+
+#editor::-webkit-scrollbar-thumb:hover,
+.syntax-dropdown::-webkit-scrollbar-thumb:hover {
+    background: #999999;
+}
+
+@media (max-width: 768px) {
+    .statusbar {
+        padding: 10px 15px;
+        gap: 10px;
+    }
+    
+    .statusbar h1 {
+        font-size: 1rem;
+    }
+    
+    .statusbar p {
+        display: none;
+    }
+    
+    .statusbar .toolbar button {
+        padding: 5px 10px;
+        font-size: 0.8rem;
+    }
+    .container {
+        margin: 0;
+        border-radius: var(--border-radius-main);
+    }
+    .editor-container {
+        padding: 15px;
+    }
+    #editor {
+        padding: 15px;
+        min-height: 350px;
+    }
+    .syntax-dropdown {
+        right: 10px;
+        left: 10px;
+        min-width: auto;
+        max-width: calc(100% - 20px);
+        max-height: 60vh;
+    }
+}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="editor-container">
+            <div id="editor" contenteditable="true" spellcheck="false" data-placeholder="Start typing your markdown... Use the syntax guide for help." dir="auto" autofocus></div>
+        </div>
+        <div class="statusbar">
+            <h1>Markdown Editor</h1>
+            <p>Reimagined by Araz Gholami</p>
+            <div class="toolbar">
+                <button onclick="newDocument()">New</button>
+                <button onclick="document.getElementById('loadFile').click()">Load</button>
+                <input type="file" id="loadFile" accept=".md,.txt" style="display: none;"  onchange="loadDocument(event)">
+                <button onclick="saveDocument()">Save</button>
+                <button onclick="toggleSyntaxGuide()" id="helpButton">Help</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="syntax-dropdown" id="syntaxDropdown">
+        <h3>Syntax Guide</h3>
+        <p><strong>Headers:</strong> <code># H1</code>, <code>## H2</code>, <code>### H3</code>, <code>#### H4</code>, <code>##### H5</code>, <code>###### H6</code></p>
+        <p><strong>Text Formatting:</strong> <code>**bold**</code>, <code>*italic*</code>, <code>__underline__</code>, <code>`code`</code></p>
+        <p><strong>Lists:</strong> <code>- unordered item</code>, <code>1. ordered item</code></p>
+        <p><strong>Checkboxes:</strong> <code>[ ] unchecked</code>, <code>[x] checked</code></p>
+        <p><strong>Links:</strong> <code>[text](url)</code></p>
+        <p><strong>Images:</strong> <code>![alt text](image url)</code></p>
+        <p><strong>Quotes:</strong> <code>> quote text</code></p>
+        <p style="background-color: rgb(208, 208, 208);"><strong>Navigation:</strong> <code>→</code> Right arrow to exit current tag, <code>↓</code> Down arrow to move to new line, <code>Backspace</code> at end to revert to markdown</p>
+    </div>
+    <script>
+class MarkdownEditor {
+    constructor(element) {
+        this.editor = element;
+        this.isProcessing = false;
+        this.setupEventListeners();
+        this.loadFromLocalStorage();
+    }
+
+    setupEventListeners() {
+        this.editor.addEventListener('input', (e) => {
+            this.handleInput(e);
+            this.saveToLocalStorage();
+        });
+        this.editor.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const div = document.createElement('div');
+                div.setAttribute('dir', 'auto');
+                div.innerHTML = '<br>';
+                
+                const selection = window.getSelection();
+                const range = selection.getRangeAt(0);
+                
+                range.insertNode(div);
+                range.setStartAfter(div);
+                range.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(range);
+                this.setCursorAtEnd(div);
+            } else {
+                this.handleKeyDown(e);
+            }
+        });
+        this.editor.addEventListener('keyup', (e) => this.handleKeyUp(e));
+    }
+
+    handleInput(e) {
+        if (this.isProcessing) return;
+
+        const selection = window.getSelection();
+        if (selection.rangeCount === 0) return;
+
+        const range = selection.getRangeAt(0);
+        const textContent = range.startContainer.textContent || '';
+        const cursorPos = range.startOffset;
+
+        this.processMarkdown(textContent, cursorPos, range);
+    }
+
+    handleKeyDown(e) {
+        if (e.key === 'Backspace') {
+            this.handleBackspace(e);
+        } else if (e.key === 'ArrowDown') {
+            this.handleArrowDown(e);
+        }
+    }
+
+    handleKeyUp(e) {
+        if (e.key === 'ArrowRight') {
+            this.handleArrowRight();
+        }
+    }
+
+    processMarkdown(text, cursorPos, range) {
+        this.isProcessing = true;
+
+        const patterns = [
+            { regex: /^\[x\]\s(.+)$/, handler: (match) => this.createCheckbox(match[1], range.startContainer, true), minPos: 4 },
+            { regex: /^\[\s?\]\s(.+)$/, handler: (match) => this.createCheckbox(match[1], range.startContainer, false), minPos: 3 },
+            { regex: /^(#{1,6})\s(.*)$/, handler: (match) => this.replaceWithElement(`h${match[1].length}`, match[2], range.startContainer), minPos: (match) => match[1].length + 1 },
+            { regex: /^>\s(.+)$/, handler: (match) => this.createBlockquote(match[1], range.startContainer), minPos: 2 },
+            { regex: /!\[([^\]]*)\]\(([^)]+)\)/, handler: (match) => this.createImage(match[1], match[2], text, range.startContainer), minPos: (match) => text.indexOf(match[0]) + match[0].length },
+            { regex: /\[([^\]]+)\]\(([^)]+)\)/, handler: (match) => this.createLink(match[1], match[2], text, range.startContainer), minPos: (match) => text.indexOf(match[0]) + match[0].length },
+            { regex: /\*\*(.*?)\*\*/, handler: (match) => this.replaceInlineMarkdown(text, match, 'strong', range.startContainer), minPos: (match) => text.indexOf(match[0]) + match[0].length },
+            { regex: /(?<!\*)\*([^*]+)\*(?!\*)/, handler: (match) => this.replaceInlineMarkdown(text, match, 'em', range.startContainer), minPos: (match) => text.indexOf(match[0]) + match[0].length },
+            { regex: /__(.+?)__/, handler: (match) => this.replaceInlineMarkdown(text, match, 'u', range.startContainer), minPos: (match) => text.indexOf(match[0]) + match[0].length },
+            { regex: /`([^`]+)`/, handler: (match) => this.createInlineCode(text, match, range.startContainer), minPos: (match) => text.indexOf(match[0]) + match[0].length },
+            { regex: /^(\d+)\.\s(.+)$/, handler: (match) => this.createOrderedListItem(match[2], range.startContainer), minPos: (match) => match[1].length + 2 },
+            { regex: /^-\s(.+)$/, handler: (match) => this.createListItem(match[1], range.startContainer), minPos: 2 }
+        ];
+
+        for (const pattern of patterns) {
+            const match = text.match(pattern.regex);
+            if (match) {
+                const minPos = typeof pattern.minPos === 'function' ? pattern.minPos(match) : pattern.minPos;
+                if (cursorPos > minPos) {
+                    pattern.handler(match);
+                    this.isProcessing = false;
+                    return;
+                }
+            }
+        }
+
+        this.isProcessing = false;
+    }
+
+    replaceWithElement(tagName, content, textNode) {
+        const element = document.createElement(tagName);
+        element.setAttribute('dir', 'auto');
+        element.textContent = content;
+
+        const parent = textNode.parentNode;
+        parent.replaceChild(element, textNode);
+
+        this.setCursorAtEnd(element);
+    }
+
+    createBlockquote(content, textNode) {
+        const blockquote = document.createElement('blockquote');
+        blockquote.setAttribute('dir', 'auto');
+        blockquote.textContent = content;
+
+        const parent = textNode.parentNode;
+        parent.replaceChild(blockquote, textNode);
+
+        this.setCursorAtEnd(blockquote);
+    }
+
+    createInlineCode(text, match, textNode) {
+        const code = document.createElement('code');
+        code.setAttribute('dir', 'auto');
+        code.textContent = match[1];
+
+        this.insertElementWithText(code, text, match[0], textNode);
+    }
+
+    replaceInlineMarkdown(text, match, tagName, textNode) {
+        const element = document.createElement(tagName);
+        element.setAttribute('dir', 'auto');
+        element.textContent = match[1];
+
+        this.insertElementWithText(element, text, match[0], textNode);
+    }
+
+    insertElementWithText(element, text, matchText, textNode) {
+        const beforeText = text.substring(0, text.indexOf(matchText));
+        const afterText = text.substring(text.indexOf(matchText) + matchText.length);
+
+        const parent = textNode.parentNode;
+
+        if (beforeText) {
+            const beforeNode = document.createTextNode(beforeText);
+            parent.insertBefore(beforeNode, textNode);
+        }
+
+        parent.insertBefore(element, textNode);
+
+        if (afterText) {
+            const afterNode = document.createTextNode(afterText);
+            parent.insertBefore(afterNode, textNode);
+        }
+
+        parent.removeChild(textNode);
+        this.setCursorAfter(element);
+    }
+
+    createListItem(content, textNode) {
+        const li = document.createElement('li');
+        li.setAttribute('dir', 'auto');
+        li.textContent = content;
+
+        const parent = textNode.parentNode;
+        let ul = parent.previousElementSibling;
+
+        if (!ul || ul.tagName !== 'UL') {
+            ul = document.createElement('ul');
+            ul.setAttribute('dir', 'auto');
+            parent.insertBefore(ul, textNode);
+        }
+
+        ul.appendChild(li);
+        parent.removeChild(textNode);
+
+        this.setCursorAtEnd(li);
+    }
+
+    createOrderedListItem(content, textNode) {
+        const li = document.createElement('li');
+        li.setAttribute('dir', 'auto');
+        li.textContent = content;
+
+        const parent = textNode.parentNode;
+        let ol = parent.previousElementSibling;
+
+        if (!ol || ol.tagName !== 'OL') {
+            ol = document.createElement('ol');
+            ol.setAttribute('dir', 'auto');
+            parent.insertBefore(ol, textNode);
+        }
+
+        ol.appendChild(li);
+        parent.removeChild(textNode);
+
+        this.setCursorAtEnd(li);
+    }
+
+    createCheckbox(content, textNode, checked = false) {
+        const div = document.createElement('div');
+        div.setAttribute('dir', 'auto');
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = checked;
+
+        div.appendChild(checkbox);
+        div.appendChild(document.createTextNode(' ' + content));
+
+        const parent = textNode.parentNode;
+        parent.replaceChild(div, textNode);
+
+        this.setCursorAfter(div);
+    }
+
+    createLink(text, url, fullText, textNode) {
+        const link = document.createElement('a');
+        link.href = url;
+        link.textContent = text;
+        link.target = '_blank';
+        link.setAttribute('dir', 'auto');
+
+        const match = fullText.match(/\[([^\]]+)\]\(([^)]+)\)/);
+        this.insertElementWithText(link, fullText, match[0], textNode);
+    }
+
+    createImage(alt, src, fullText, textNode) {
+        const img = document.createElement('img');
+        img.src = src;
+        img.alt = alt;
+        img.setAttribute('dir', 'auto');
+
+        const match = fullText.match(/!\[([^\]]*)\]\(([^)]+)\)/);
+        this.insertElementWithText(img, fullText, match[0], textNode);
+    }
+
+    handleBackspace(e) {
+        const selection = window.getSelection();
+        if (selection.rangeCount === 0) return;
+
+        const range = selection.getRangeAt(0);
+
+        if (range.startContainer.nodeType === Node.TEXT_NODE) {
+            const element = range.startContainer.parentElement;
+            const textContent = range.startContainer.textContent;
+            if (range.startOffset === textContent.length && this.isStyledElement(element)) {
+                e.preventDefault();
+                this.convertToMarkdown(element);
+                return;
+            }
+        } else if (range.startContainer.nodeType === Node.ELEMENT_NODE) {
+            const element = range.startContainer;
+            if (this.isStyledElement(element)) {
+                const textNode = element.firstChild;
+                if (textNode && textNode.nodeType === Node.TEXT_NODE && range.startOffset === textNode.textContent.length) {
+                    e.preventDefault();
+                    this.convertToMarkdown(element);
+                    return;
+                }
+            }
+
+            const prevElement = range.startContainer.childNodes[range.startOffset - 1];
+            if (prevElement && this.isStyledElement(prevElement)) {
+                e.preventDefault();
+                this.convertToMarkdown(prevElement);
+                return;
+            }
+        }
+    }
+
+    handleArrowRight() {
+        const selection = window.getSelection();
+        if (selection.rangeCount === 0) return;
+
+        const range = selection.getRangeAt(0);
+        const element = range.startContainer.parentElement;
+
+        if (this.isStyledElement(element) && range.startOffset === range.startContainer.textContent.length) {
+            this.setCursorAfter(element);
+        }
+    }
+
+    handleArrowDown(e) {
+        const selection = window.getSelection();
+        if (selection.rangeCount === 0) return;
+
+        const range = selection.getRangeAt(0);
+        const element = range.startContainer.parentElement;
+
+        if (this.isStyledElement(element)) {
+            e.preventDefault();
+
+            const div = document.createElement('div');
+            div.setAttribute('dir', 'auto');
+            div.innerHTML = '<br>';
+
+            if (element.nextSibling) {
+                element.parentNode.insertBefore(div, element.nextSibling);
+            } else {
+                element.parentNode.appendChild(div);
+            }
+
+            this.setCursorAtEnd(div);
+        }
+    }
+
+    isStyledElement(element) {
+        return ['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'STRONG', 'EM', 'U', 'CODE', 'LI', 'BLOCKQUOTE', 'A', 'IMG'].includes(element.tagName);
+    }
+
+    convertToMarkdown(element) {
+        const text = element.textContent;
+        let markdown = '';
+
+        switch (element.tagName) {
+            case 'H1': markdown = `# ${text}`; break;
+            case 'H2': markdown = `## ${text}`; break;
+            case 'H3': markdown = `### ${text}`; break;
+            case 'H4': markdown = `#### ${text}`; break;
+            case 'H5': markdown = `##### ${text}`; break;
+            case 'H6': markdown = `###### ${text}`; break;
+            case 'STRONG': markdown = `**${text}**`; break;
+            case 'EM': markdown = `*${text}*`; break;
+            case 'U': markdown = `__${text}__`; break;
+            case 'CODE': markdown = `\`${text}\``; break;
+            case 'BLOCKQUOTE': markdown = `> ${text}`; break;
+            case 'A': markdown = `[${text}](${element.href})`; break;
+            case 'IMG': markdown = `![${element.alt}](${element.src})`; break;
+            case 'LI':
+                const parentTag = element.parentElement.tagName;
+                if (parentTag === 'OL') {
+                    markdown = `1. ${text}`;
+                } else {
+                    markdown = `- ${text}`;
+                }
+                break;
+        }
+
+        const textNode = document.createTextNode(markdown);
+        element.parentNode.replaceChild(textNode, element);
+
+        this.setCursorAtEnd(textNode);
+    }
+
+    setCursorAtEnd(element) {
+        const range = document.createRange();
+        const selection = window.getSelection();
+
+        if (element.nodeType === Node.TEXT_NODE) {
+            range.setStart(element, element.textContent.length);
+        } else {
+            range.selectNodeContents(element);
+            range.collapse(false);
+        }
+
+        selection.removeAllRanges();
+        selection.addRange(range);
+    }
+
+    setCursorAfter(element) {
+        const range = document.createRange();
+        const selection = window.getSelection();
+
+        range.setStartAfter(element);
+        range.collapse(true);
+
+        selection.removeAllRanges();
+        selection.addRange(range);
+    }
+
+    getMarkdownContent() {
+        const clone = this.editor.cloneNode(true);
+        return this.convertHtmlToMarkdown(clone);
+    }
+
+    convertHtmlToMarkdown(element) {
+        let markdown = '';
+
+        for (const node of element.childNodes) {
+            if (node.nodeType === Node.TEXT_NODE) {
+                markdown += node.textContent;
+            } else if (node.nodeType === Node.ELEMENT_NODE) {
+                const tagName = node.tagName;
+                const text = node.textContent;
+
+                switch (tagName) {
+                    case 'H1': markdown += `# ${text}\n`; break;
+                    case 'H2': markdown += `## ${text}\n`; break;
+                    case 'H3': markdown += `### ${text}\n`; break;
+                    case 'H4': markdown += `#### ${text}\n`; break;
+                    case 'H5': markdown += `##### ${text}\n`; break;
+                    case 'H6': markdown += `###### ${text}\n`; break;
+                    case 'STRONG': markdown += `**${text}**`; break;
+                    case 'EM': markdown += `*${text}*`; break;
+                    case 'U': markdown += `__${text}__`; break;
+                    case 'CODE': markdown += `\`${text}\``; break;
+                    case 'BLOCKQUOTE': markdown += `> ${text}\n`; break;
+                    case 'A': markdown += `[${text}](${node.href})`; break;
+                    case 'IMG': markdown += `![${node.alt}](${node.src})\n`; break;
+                    case 'UL':
+                        for (const li of node.children) {
+                            markdown += `- ${li.textContent}\n`;
+                        }
+                        break;
+                    case 'OL':
+                        for (let i = 0; i < node.children.length; i++) {
+                            markdown += `${i + 1}. ${node.children[i].textContent}\n`;
+                        }
+                        break;
+                    case 'DIV':
+                        const checkbox = node.querySelector('input[type="checkbox"]');
+                        if (checkbox) {
+                            const checked = checkbox.checked ? 'x' : ' ';
+                            markdown += `[${checked}] ${text.trim()}\n`;
+                        } else {
+                            markdown += text;
+                        }
+                        break;
+                    case 'BR':
+                        markdown += '\n';
+                        break;
+                    default:
+                        markdown += text;
+                }
+            }
+        }
+
+        return markdown;
+    }
+
+    setContent(content) {
+        const htmlContent = content
+            .replace(/\n/g, '<br dir="auto">')
+            .replace(/<br\s*\/?>/gi, '<br dir="auto">');
+        this.editor.innerHTML = htmlContent;
+    }
+
+    saveToLocalStorage() {
+        const content = this.getMarkdownContent();
+        localStorage.setItem('markdownEditorContent', content);
+    }
+
+    loadFromLocalStorage() {
+        const savedContent = localStorage.getItem('markdownEditorContent');
+        if (savedContent) {
+            const lines = savedContent.split('\n');
+            const processedContent = lines.map(line => {
+                if (line.match(/^#{1,6}\s/)) {
+                    const level = line.match(/^(#{1,6})\s/)[1].length;
+                    const text = line.replace(/^#{1,6}\s/, '');
+                    return `<h${level} dir="auto">${text}</h${level}><br dir="auto">`;
+                }
+                if (line.match(/^>\s/)) {
+                    const text = line.replace(/^>\s/, '');
+                    return `<blockquote dir="auto">${text}</blockquote><br dir="auto">`;
+                }
+                if (line.match(/^-\s/)) {
+                    const text = line.replace(/^-\s/, '');
+                    return `<ul dir="auto"><li dir="auto">${text}</li></ul><br dir="auto">`;
+                }
+                if (line.match(/^\d+\.\s/)) {
+                    const text = line.replace(/^\d+\.\s/, '');
+                    return `<ol dir="auto"><li dir="auto">${text}</li></ol><br dir="auto">`;
+                }
+                if (line.match(/^\[ \]\s/)) {
+                    const text = line.replace(/^\[ \]\s/, '');
+                    return `<div dir="auto"><input type="checkbox"> ${text}</div><br dir="auto">`;
+                }
+                if (line.match(/^\[x\]\s/)) {
+                    const text = line.replace(/^\[x\]\s/, '');
+                    return `<div dir="auto"><input type="checkbox" checked> ${text}</div><br dir="auto">`;
+                }
+                line = line.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" dir="auto">$1</a>');
+                line = line.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" dir="auto">');
+                line = line.replace(/\*\*(.*?)\*\*/g, '<strong dir="auto">$1</strong>');
+                line = line.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em dir="auto">$1</em>');
+                line = line.replace(/__(.+?)__/g, '<u dir="auto">$1</u>');
+                line = line.replace(/`([^`]+)`/g, '<code dir="auto">$1</code>');
+                
+                return line ? `${line}<br dir="auto">` : '<br dir="auto">';
+            }).join('');
+            
+            this.editor.innerHTML = processedContent;
+        }
+    }
+}
+
+let editor;
+
+function newDocument() {
+    if (confirm('Are you sure you want to create a new document? Unsaved changes will be lost.')) {
+        editor.editor.innerHTML = '';
+        editor.editor.focus();
+        localStorage.removeItem('markdownEditorContent');
+    }
+}
+
+function loadDocument(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const content = e.target.result;
+            const lines = content.split('\n');
+            const processedContent = lines.map(line => {
+                if (line.match(/^#{1,6}\s/)) {
+                    const level = line.match(/^(#{1,6})\s/)[1].length;
+                    const text = line.replace(/^#{1,6}\s/, '');
+                    return `<h${level} dir="auto">${text}</h${level}><br dir="auto">`;
+                }
+                if (line.match(/^>\s/)) {
+                    const text = line.replace(/^>\s/, '');
+                    return `<blockquote dir="auto">${text}</blockquote><br dir="auto">`;
+                }
+                if (line.match(/^-\s/)) {
+                    const text = line.replace(/^-\s/, '');
+                    return `<ul dir="auto"><li dir="auto">${text}</li></ul><br dir="auto">`;
+                }
+                if (line.match(/^\d+\.\s/)) {
+                    const text = line.replace(/^\d+\.\s/, '');
+                    return `<ol dir="auto"><li dir="auto">${text}</li></ol><br dir="auto">`;
+                }
+                if (line.match(/^\[ \]\s/)) {
+                    const text = line.replace(/^\[ \]\s/, '');
+                    return `<div dir="auto"><input type="checkbox"> ${text}</div><br dir="auto">`;
+                }
+                if (line.match(/^\[x\]\s/)) {
+                    const text = line.replace(/^\[x\]\s/, '');
+                    return `<div dir="auto"><input type="checkbox" checked> ${text}</div><br dir="auto">`;
+                }
+                line = line.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" dir="auto">$1</a>');
+                line = line.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" dir="auto">');
+                line = line.replace(/\*\*(.*?)\*\*/g, '<strong dir="auto">$1</strong>');
+                line = line.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em dir="auto">$1</em>');
+                line = line.replace(/__(.+?)__/g, '<u dir="auto">$1</u>');
+                line = line.replace(/`([^`]+)`/g, '<code dir="auto">$1</code>');
+                
+                return line ? `${line}<br dir="auto">` : '<br dir="auto">';
+            }).join('');
+            
+            editor.editor.innerHTML = processedContent;
+            editor.editor.focus();
+            editor.saveToLocalStorage();
+        };
+        reader.readAsText(file);
+    }
+}
+
+function saveDocument() {
+    const content = editor.getMarkdownContent();
+    
+    const lines = content.split('\n');
+    const firstLine = lines[0] || 'document';
+    const cleanFirstLine = firstLine.replace(/[^\w\s-]/g, '').trim() || 'document';
+    
+    const now = new Date();
+    const dateTime = now.toISOString().slice(0, 19).replace(/:/g, '-');
+    const filename = `${cleanFirstLine}_${dateTime}.md`;
+    
+    const blob = new Blob([content], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    editor.saveToLocalStorage();
+}
+
+function toggleSyntaxGuide() {
+    const dropdown = document.getElementById('syntaxDropdown');
+    dropdown.classList.toggle('show');
+}
+
+document.addEventListener('click', function(event) {
+    const dropdown = document.getElementById('syntaxDropdown');
+    const helpButton = document.getElementById('helpButton');
+
+    if (dropdown.classList.contains('show') && !dropdown.contains(event.target) && event.target !== helpButton) {
+        dropdown.classList.remove('show');
+    }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    const editorElement = document.getElementById('editor');
+    editor = new MarkdownEditor(editorElement);
+    editorElement.focus();
+});
+</script>
+    </body>
+</html>
