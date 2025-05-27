@@ -1,6 +1,6 @@
 /**
  * WYSIWYG Markdown Editor
- * Version: 1.0.0
+ * Version: 2.5
  * A lightweight, real-time markdown editor with live rendering and LTR-RTL support
  * Usage: MarkdownEditor.init('your-div-id');
  * Author: Araz Gholami @arazgholami
@@ -26,22 +26,39 @@ class MarkdownEditor {
 
     handleInput(e) {
         if (this.isProcessing) return;
-
+    
+        
         const selection = window.getSelection();
         if (selection.rangeCount === 0) return;
-
+    
         const range = selection.getRangeAt(0);
+        
+        
+        if (range.startContainer === this.editor || 
+            (range.startContainer.nodeType === Node.TEXT_NODE && range.startContainer.parentNode === this.editor)) {
+            const div = document.createElement('div');
+            div.setAttribute('dir', 'auto');
+            
+            if (range.startContainer.nodeType === Node.TEXT_NODE) {
+                div.appendChild(range.startContainer.cloneNode(true));
+                this.editor.removeChild(range.startContainer);
+            } else {
+                div.innerHTML = '<br>';
+            }
+            this.editor.appendChild(div);
+            this.setCursorAtEnd(div);
+            return;
+        }
+    
         const textContent = range.startContainer.textContent || '';
         const cursorPos = range.startOffset;
-
+    
         this.processMarkdown(textContent, cursorPos, range);
     }
 
     handleKeyDown(e) {
         if (e.key === 'Backspace') {
             this.handleBackspace(e);
-        } else if (e.key === 'ArrowDown') {
-            this.handleArrowDown(e);
         } else if (e.key === 'Enter') {
             e.preventDefault();
             const selection = window.getSelection();
@@ -55,7 +72,50 @@ class MarkdownEditor {
                 return;
             }
 
-            // Handle list items
+            // Handle Shift+Enter in blockquotes
+            if (e.shiftKey) {
+                let currentElement = range.startContainer;
+                if (currentElement.nodeType === Node.TEXT_NODE) {
+                    currentElement = currentElement.parentElement;
+                }
+                
+                if (currentElement.tagName === 'BLOCKQUOTE') {
+                    const br = document.createElement('br');
+                    if (range.startContainer.nodeType === Node.TEXT_NODE) {
+                        const text = range.startContainer.textContent;
+                        const beforeText = text.substring(0, range.startOffset);
+                        const afterText = text.substring(range.startOffset);
+                        
+                        // Create new text nodes for before and after text
+                        const beforeNode = document.createTextNode(beforeText);
+                        const afterNode = document.createTextNode(afterText);
+                        
+                        // Replace the original text node with our new nodes and br
+                        const parent = range.startContainer.parentNode;
+                        parent.replaceChild(beforeNode, range.startContainer);
+                        parent.insertBefore(br, beforeNode.nextSibling);
+                        
+                        // Add non-breaking space after br
+                        const nbsp = document.createTextNode('\u00A0');
+                        parent.insertBefore(nbsp, br.nextSibling);
+                        parent.insertBefore(afterNode, nbsp.nextSibling);
+                        
+                        // Set cursor position after the nbsp
+                        range.setStart(afterNode, 0);
+                        range.setEnd(afterNode, 0);
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+                    } else {
+                        currentElement.appendChild(br);
+                        // Add non-breaking space after br
+                        const nbsp = document.createTextNode('\u00A0');
+                        currentElement.appendChild(nbsp);
+                        this.setCursorAfter(nbsp);
+                    }
+                    return;
+                }
+            }
+            
             let currentElement = range.startContainer;
             if (currentElement.nodeType === Node.TEXT_NODE) {
                 currentElement = currentElement.parentElement;
@@ -68,6 +128,7 @@ class MarkdownEditor {
                 if (listItem.textContent.trim() === '' || 
                     (listItem.childNodes.length === 1 && listItem.firstChild.nodeName === 'BR')) {
                     const div = document.createElement('div');
+                    div.setAttribute('dir', 'auto');
                     div.innerHTML = '<br>';
                     
                     const list = listItem.parentNode;
@@ -88,6 +149,7 @@ class MarkdownEditor {
                 }
 
                 const newLi = document.createElement('li');
+                newLi.setAttribute('dir', 'auto');
                 newLi.innerHTML = '<br>';
                 
                 const list = listItem.parentNode;
@@ -101,30 +163,28 @@ class MarkdownEditor {
                 return;
             }
 
-            // Default Enter behavior - Fixed to prevent nested divs
+            
             const div = document.createElement('div');
             div.setAttribute('dir', 'auto');
             div.innerHTML = '<br>';
             
-            // Find the appropriate parent container (the main editor)
             let container = range.startContainer;
             while (container && container !== this.editor && container.parentNode !== this.editor) {
                 container = container.parentNode;
             }
             
-            // If we're inside the editor or a direct child of the editor
             if (container === this.editor) {
-                // We're directly in the editor, append the new div
+                
                 this.editor.appendChild(div);
             } else if (container && container.parentNode === this.editor) {
-                // We're in a direct child of the editor, insert after it
+                
                 if (container.nextSibling) {
                     this.editor.insertBefore(div, container.nextSibling);
                 } else {
                     this.editor.appendChild(div);
                 }
             } else {
-                // Fallback: just append to the editor
+                
                 this.editor.appendChild(div);
             }
             
@@ -142,6 +202,7 @@ class MarkdownEditor {
         this.isProcessing = true;
 
         const patterns = [
+            { regex: /`([^`]+)`/, handler: (match) => this.createInlineCode(text, match, range.startContainer), minPos: (match) => text.indexOf(match[0]) + match[0].length },
             { regex: /^\[x\]\s(.+)$/, handler: (match) => this.createCheckbox(match[1], range.startContainer, true), minPos: 4 },
             { regex: /^\[\s?\]\s(.+)$/, handler: (match) => this.createCheckbox(match[1], range.startContainer, false), minPos: 3 },
             { regex: /^(#{1,6})\s(.*)$/, handler: (match) => this.replaceWithElement(`h${match[1].length}`, match[2], range.startContainer), minPos: (match) => match[1].length + 1 },
@@ -152,7 +213,6 @@ class MarkdownEditor {
             { regex: /\*\*(.*?)\*\*/, handler: (match) => this.replaceInlineMarkdown(text, match, 'strong', range.startContainer), minPos: (match) => text.indexOf(match[0]) + match[0].length },
             { regex: /(?<!\*)\*([^*]+)\*(?!\*)/, handler: (match) => this.replaceInlineMarkdown(text, match, 'em', range.startContainer), minPos: (match) => text.indexOf(match[0]) + match[0].length },
             { regex: /__(.+?)__/, handler: (match) => this.replaceInlineMarkdown(text, match, 'u', range.startContainer), minPos: (match) => text.indexOf(match[0]) + match[0].length },
-            { regex: /`([^`]+)`/, handler: (match) => this.createInlineCode(text, match, range.startContainer), minPos: (match) => text.indexOf(match[0]) + match[0].length },
             { regex: /^(\d+)\.\s(.+)$/, handler: (match) => this.createOrderedListItem(match[2], range.startContainer), minPos: (match) => match[1].length + 2 },
             { regex: /^-\s(.+)$/, handler: (match) => this.createListItem(match[1], range.startContainer), minPos: 2 }
         ];
@@ -184,6 +244,7 @@ class MarkdownEditor {
 
     createBlockquote(content, textNode) {
         const blockquote = document.createElement('blockquote');
+        blockquote.setAttribute('dir', 'auto');
         blockquote.textContent = content;
 
         const parent = textNode.parentNode;
@@ -193,7 +254,9 @@ class MarkdownEditor {
     }
 
     createInlineCode(text, match, textNode) {
+        console.log(text, match, textNode);
         const code = document.createElement('code');
+        code.setAttribute('dir', 'auto');
         code.textContent = match[1];
 
         this.insertElementWithText(code, text, match[0], textNode);
@@ -201,6 +264,7 @@ class MarkdownEditor {
 
     replaceInlineMarkdown(text, match, tagName, textNode) {
         const element = document.createElement(tagName);
+        element.setAttribute('dir', 'auto');
         element.textContent = match[1];
 
         this.insertElementWithText(element, text, match[0], textNode);
@@ -228,45 +292,64 @@ class MarkdownEditor {
         this.setCursorAfter(element);
     }
 
+    
     createListItem(content, textNode) {
         const li = document.createElement('li');
+        li.setAttribute('dir', 'auto');
         li.textContent = content;
 
         const parent = textNode.parentNode;
-        let ul = parent.previousElementSibling;
-
-        if (!ul || ul.tagName !== 'UL') {
+        
+        let ul = null;
+        
+        
+        if (parent.previousElementSibling && parent.previousElementSibling.tagName === 'UL') {
+            ul = parent.previousElementSibling;
+        }
+        
+        
+        if (!ul) {
             ul = document.createElement('ul');
-            parent.insertBefore(ul, textNode);
+            ul.setAttribute('dir', 'auto');
+            parent.parentNode.insertBefore(ul, parent);
         }
 
         ul.appendChild(li);
-        parent.removeChild(textNode);
+        parent.parentNode.removeChild(parent);
 
         this.setCursorAtEnd(li);
     }
 
+    
     createOrderedListItem(content, textNode) {
         const li = document.createElement('li');
+        li.setAttribute('dir', 'auto');
         li.textContent = content;
 
         const parent = textNode.parentNode;
-        let ol = parent.previousElementSibling;
-
-        if (!ol || ol.tagName !== 'OL') {
+        let ol = null;
+        
+        if (parent.previousElementSibling && parent.previousElementSibling.tagName === 'OL') {
+            ol = parent.previousElementSibling;
+        }
+        
+        if (!ol) {
             ol = document.createElement('ol');
-            parent.insertBefore(ol, textNode);
+            ol.setAttribute('dir', 'auto');
+            parent.parentNode.insertBefore(ol, parent);
         }
 
         ol.appendChild(li);
-        parent.removeChild(textNode);
+        parent.parentNode.removeChild(parent);
 
         this.setCursorAtEnd(li);
     }
 
     createCheckbox(content, textNode, checked = false) {
         const div = document.createElement('div');
+        div.setAttribute('dir', 'auto');
         const checkbox = document.createElement('input');
+        checkbox.setAttribute('dir', 'auto');
         checkbox.type = 'checkbox';
         checkbox.checked = checked;
 
@@ -305,6 +388,7 @@ class MarkdownEditor {
         parent.replaceChild(hr, textNode);
         
         const div = document.createElement('div');
+        div.setAttribute('dir', 'auto');
         div.innerHTML = '<br>';
         parent.insertBefore(div, hr.nextSibling);
         
@@ -357,29 +441,6 @@ class MarkdownEditor {
         }
     }
 
-    handleArrowDown(e) {
-        const selection = window.getSelection();
-        if (selection.rangeCount === 0) return;
-
-        const range = selection.getRangeAt(0);
-        const element = range.startContainer.parentElement;
-
-        if (this.isStyledElement(element)) {
-            e.preventDefault();
-
-            const div = document.createElement('div');
-            div.innerHTML = '<br>';
-
-            if (element.nextSibling) {
-                element.parentNode.insertBefore(div, element.nextSibling);
-            } else {
-                element.parentNode.appendChild(div);
-            }
-
-            this.setCursorAtEnd(div);
-        }
-    }
-
     isStyledElement(element) {
         return ['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'STRONG', 'EM', 'U', 'CODE', 'LI', 'BLOCKQUOTE', 'A', 'IMG', 'HR'].includes(element.tagName);
     }
@@ -404,13 +465,37 @@ class MarkdownEditor {
             case 'IMG': markdown = `![${element.alt}](${element.src})`; break;
             case 'HR': markdown = `---`; break;
             case 'LI':
-                const parentTag = element.parentElement.tagName;
+                const parentList = element.parentElement;
+                const parentTag = parentList.tagName;
                 if (parentTag === 'OL') {
                     markdown = `1. ${text}`;
                 } else {
                     markdown = `- ${text}`;
                 }
-                break;
+                
+                
+                const div = document.createElement('div');
+                div.setAttribute('dir', 'auto');
+                const textNode = document.createTextNode(markdown);
+                div.appendChild(textNode);
+                
+                
+                if (parentList.nextSibling) {
+                    parentList.parentNode.insertBefore(div, parentList.nextSibling);
+                } else {
+                    parentList.parentNode.appendChild(div);
+                }
+                
+                
+                parentList.removeChild(element);
+                
+                
+                if (parentList.children.length === 0) {
+                    parentList.parentNode.removeChild(parentList);
+                }
+                
+                this.setCursorAtEnd(textNode);
+                return; 
         }
 
         const textNode = document.createTextNode(markdown);
@@ -457,7 +542,7 @@ class MarkdownEditor {
         element.setAttribute('dir', 'auto');
         
         if (options.placeholder) {
-            element.setAttribute('data-placeholder', options.placeholder);
+            element.setAttribute('placeholder', options.placeholder);
         }
 
         if (options.autofocus !== false) {
@@ -472,7 +557,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const autoElements = document.querySelectorAll('[data-markdown-editor]');
     autoElements.forEach(element => {
         const options = {
-            placeholder: element.getAttribute('data-placeholder'),
+            placeholder: element.getAttribute('placeholder'),
             autofocus: element.getAttribute('data-autofocus') !== 'false'
         };
         MarkdownEditor.init(element.id, options);
