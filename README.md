@@ -8,7 +8,7 @@ A lightweight, real-time markdown editor with live rendering and LTR-RTL support
 
 
 ## Syntax Guide
-<p><strong>Navigation:</strong> <code>→</code> Right arrow to exit current tag, <code>↓</code> Down arrow to move to new line, <code>Backspace</code> at end to revert to markdown</p>
+<p><strong>Navigation:</strong> Exit current tag: <code>⇨</code> Revert to markdown: <code>Backspace</code></p>
 <br>
 <p><strong>Headers:</strong> <code># H1</code>, <code>## H2</code>, <code>### H3</code>, <code>#### H4</code>, <code>##### H5</code>, <code>###### H6</code></p>
 <p><strong>Text Formatting:</strong> <code>**bold**</code>, <code>*italic*</code>, <code>__underline__</code>, <code>`code`</code></p>
