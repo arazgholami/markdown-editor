@@ -1,6 +1,6 @@
 /**
  * WYSIWYG Markdown Editor
- * Version: 2.5
+ * Version: 3.0
  * A lightweight, real-time markdown editor with live rendering and LTR-RTL support
  * Usage: MarkdownEditor.init('your-div-id');
  * Author: Araz Gholami @arazgholami
@@ -203,8 +203,8 @@ class MarkdownEditor {
 
         const patterns = [
             { regex: /`([^`]+)`/, handler: (match) => this.createInlineCode(text, match, range.startContainer), minPos: (match) => text.indexOf(match[0]) + match[0].length },
-            { regex: /^\[x\]\s(.+)$/, handler: (match) => this.createCheckbox(match[1], range.startContainer, true), minPos: 4 },
-            { regex: /^\[\s?\]\s(.+)$/, handler: (match) => this.createCheckbox(match[1], range.startContainer, false), minPos: 3 },
+            { regex: /^-\s\[x\]\s(.*)/, handler: (match) => this.createCheckbox(match[1], range.startContainer, true), minPos: 6 },
+            { regex: /^-\s\[\s?\]\s(.*)/, handler: (match) => this.createCheckbox(match[1], range.startContainer, false), minPos: 5 },
             { regex: /^(#{1,6})\s(.*)$/, handler: (match) => this.replaceWithElement(`h${match[1].length}`, match[2], range.startContainer), minPos: (match) => match[1].length + 1 },
             { regex: /^>\s(.+)$/, handler: (match) => this.createBlockquote(match[1], range.startContainer), minPos: 2 },
             { regex: /^---\s*$/, handler: (match) => this.createHorizontalRule(range.startContainer), minPos: 3 },
@@ -214,7 +214,7 @@ class MarkdownEditor {
             { regex: /(?<!\*)\*([^*]+)\*(?!\*)/, handler: (match) => this.replaceInlineMarkdown(text, match, 'em', range.startContainer), minPos: (match) => text.indexOf(match[0]) + match[0].length },
             { regex: /__(.+?)__/, handler: (match) => this.replaceInlineMarkdown(text, match, 'u', range.startContainer), minPos: (match) => text.indexOf(match[0]) + match[0].length },
             { regex: /^(\d+)\.\s(.+)$/, handler: (match) => this.createOrderedListItem(match[2], range.startContainer), minPos: (match) => match[1].length + 2 },
-            { regex: /^-\s(.+)$/, handler: (match) => this.createListItem(match[1], range.startContainer), minPos: 2 }
+            { regex: /^-\s(?!\[)(.+)$/, handler: (match) => this.createListItem(match[1], range.startContainer), minPos: 2 }
         ];
 
         for (const pattern of patterns) {
