@@ -1,6 +1,6 @@
 /**
  * WYSIWYG Markdown Editor
- * Version: 3.0
+ * v=1.7
  * A lightweight, real-time markdown editor with live rendering and LTR-RTL support
  * Usage: MarkdownEditor.init('your-div-id');
  * Author: Araz Gholami @arazgholami
@@ -345,22 +345,28 @@ class MarkdownEditor {
         this.setCursorAtEnd(li);
     }
 
-    createCheckbox(content, textNode, checked = false) {
-        const div = document.createElement('div');
-        div.setAttribute('dir', 'auto');
-        const checkbox = document.createElement('input');
-        checkbox.setAttribute('dir', 'auto');
-        checkbox.type = 'checkbox';
+createCheckbox(content, textNode, checked = false) {
+    const checkbox = document.createElement('input');
+    checkbox.setAttribute('dir', 'auto');
+    checkbox.type = 'checkbox';
+    if (checked) {
+        checkbox.setAttribute('checked', '');
         checkbox.checked = checked;
-
-        div.appendChild(checkbox);
-        div.appendChild(document.createTextNode(' ' + content));
-
-        const parent = textNode.parentNode;
-        parent.replaceChild(div, textNode);
-
-        this.setCursorAfter(div);
     }
+
+    const textSpan = document.createElement('span');
+    textSpan.setAttribute('dir', 'auto');
+    textSpan.textContent = ' ' + content;
+
+    const parent = textNode.parentNode;
+    
+    // Insert checkbox and text span directly
+    parent.insertBefore(checkbox, textNode);
+    parent.insertBefore(textSpan, textNode);
+    parent.removeChild(textNode);
+
+    this.setCursorAfter(textSpan);
+}
 
     createLink(text, url, fullText, textNode) {
         const link = document.createElement('a');
@@ -376,9 +382,11 @@ class MarkdownEditor {
         const img = document.createElement('img');
         img.src = src;
         img.alt = alt;
+        img.setAttribute('data-draggable', '');
 
         const match = fullText.match(/!\[([^\]]*)\]\(([^)]+)\)/);
         this.insertElementWithText(img, fullText, match[0], textNode);
+        initDraggableImages(editor);
     }
 
     createHorizontalRule(textNode) {
