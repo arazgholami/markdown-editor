@@ -3,32 +3,171 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Markdown Editor Usage Example</title>
-    <style>.markdown-editor { border: 1px solid #ccc; border-radius: 4px; padding: 15px; min-height: 300px; font-family: 'Courier New', monospace; line-height: 1.6; outline: none; background: #fafafa; } .markdown-editor:focus { border-color: #007cba; box-shadow: 0 0 0 2px rgba(0, 124, 186, 0.1); } .markdown-editor[data-placeholder]:empty::before { content: attr(data-placeholder); color: #999; font-style: italic; } /* Styling for rendered markdown elements */ .markdown-editor h1, .markdown-editor h2, .markdown-editor h3, .markdown-editor h4, .markdown-editor h5, .markdown-editor h6 { margin: 0.5em 0; font-weight: bold; } .markdown-editor h1 { font-size: 2em; } .markdown-editor h2 { font-size: 1.5em; } .markdown-editor h3 { font-size: 1.3em; } .markdown-editor h4 { font-size: 1.1em; } .markdown-editor h5 { font-size: 1em; } .markdown-editor h6 { font-size: 0.9em; } .markdown-editor blockquote { border-left: 4px solid #ddd; margin: 0; padding-left: 15px; color: #666; font-style: italic; } .markdown-editor code { background: #f4f4f4; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace; font-size: 0.9em; } .markdown-editor strong { font-weight: bold; } .markdown-editor em { font-style: italic; } .markdown-editor u { text-decoration: underline; } .markdown-editor ul, .markdown-editor ol { margin: 0.5em 0; padding-left: 20px; } .markdown-editor li { margin: 0.2em 0; } .markdown-editor a { color: #007cba; text-decoration: underline; } .markdown-editor a:hover { text-decoration: none; } .markdown-editor img { max-width: 100%; height: auto; } .markdown-editor hr { border: none; border-top: 2px solid #ddd; margin: 1em 0; } .markdown-editor input[type="checkbox"] { margin-right: 8px; } .container { max-width: 800px; margin: 50px auto; padding: 20px; } .example { margin-bottom: 40px; padding: 20px; border: 1px solid #eee; border-radius: 8px; } .example h3 { margin-top: 0; color: #333; } .code-example { background: #f8f8f8; padding: 10px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 0.9em; margin: 10px 0; } </style>
+    <title>WYSIWYG Markdown Editor - Demo</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 0 15px;
+            background-color: #f9f9f9;
+        }
+        .container {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .markdown-editor {
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 15px;
+            min-height: 350px;
+            font-family: 'Menlo', 'Courier New', monospace; /* Monospace for Markdown feel */
+            line-height: 1.7; /* Slightly more line height for readability */
+            outline: none;
+            background: #fff; /* Cleaner background */
+            color: #222; /* Darker text for better contrast */
+        }
+        .markdown-editor:focus {
+            border-color: #007bff; /* Bootstrap primary blue for focus */
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2); /* Softer focus shadow */
+        }
+        .markdown-editor[data-placeholder]:empty::before {
+            content: attr(data-placeholder);
+            color: #aaa; /* Lighter placeholder text */
+            font-style: italic;
+        }
+
+        /* Basic styling for rendered markdown elements within the editor */
+        .markdown-editor h1, .markdown-editor h2, .markdown-editor h3,
+        .markdown-editor h4, .markdown-editor h5, .markdown-editor h6 {
+            margin-top: 0.8em;
+            margin-bottom: 0.4em;
+            font-weight: 600; /* Slightly less bold for a cleaner look */
+        }
+        .markdown-editor h1 { font-size: 2em; }
+        .markdown-editor h2 { font-size: 1.75em; }
+        .markdown-editor h3 { font-size: 1.5em; }
+        .markdown-editor h4 { font-size: 1.25em; }
+        .markdown-editor h5 { font-size: 1.1em; }
+        .markdown-editor h6 { font-size: 1em; }
+
+        .markdown-editor blockquote {
+            border-left: 4px solid #007bff; /* Themed border color */
+            margin: 1em 0;
+            padding-left: 15px;
+            color: #555; /* Slightly darker quote text */
+            background-color: #f8f9fa; /* Subtle background for blockquote */
+            border-radius: 0 4px 4px 0;
+        }
+        .markdown-editor code {
+            background: #e9ecef; /* Lighter, cleaner code background */
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-family: 'Menlo', 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        .markdown-editor strong { font-weight: bold; }
+        .markdown-editor em { font-style: italic; }
+        /* No default underline style as it's not standard Markdown */
+
+        .markdown-editor ul, .markdown-editor ol {
+            margin: 0.8em 0;
+            padding-left: 25px; /* Slightly more padding for lists */
+        }
+        .markdown-editor li { margin-bottom: 0.3em; }
+
+        .markdown-editor a {
+            color: #007bff;
+            text-decoration: none; /* Modern look: underline on hover */
+        }
+        .markdown-editor a:hover { text-decoration: underline; }
+
+        .markdown-editor img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px; /* Slightly rounded images */
+        }
+        .markdown-editor hr {
+            border: none;
+            border-top: 1px solid #ddd; /* Thinner, cleaner hr */
+            margin: 1.5em 0;
+        }
+
+        .syntax-guide {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        .syntax-guide h3 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .syntax-guide p {
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+        .syntax-guide code {
+            background-color: #dce0e3; /* Slightly different code style for guide */
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        .nav-instructions {
+            background-color: #e9ecef;
+            padding: 10px 15px;
+            border-radius: 4px;
+            margin-top: 15px;
+        }
+    </style>
 </head>
 <body>
+    <div class="container">
+        <h1>WYSIWYG Markdown Editor Demo</h1>
+        <p>This page demonstrates the basic functionality of the WYSIWYG Markdown editor. Type Markdown in the box below and see it rendered live!</p>
 
-    <div id="my-editor" class="markdown-editor">
+        <div id="my-editor" class="markdown-editor" data-placeholder="Start typing Markdown here...">
+            <!-- Editor will be initialized here -->
+        </div>
+
+        <div class="syntax-guide">
+            <h3>Syntax Guide & Editor Behavior</h3>
+            <p><strong>Headers:</strong> <code># H1</code>, <code>## H2</code>, <code>### H3</code>, <code>#### H4</code>, <code>##### H5</code>, <code>###### H6</code></p>
+            <p><strong>Text Formatting:</strong> <code>**bold**</code>, <code>*italic*</code> (or <code>_italic_</code>), <code>`code`</code></p>
+            <p><strong>Lists:</strong> <code>- unordered item</code> (or <code>* item</code>), <code>1. ordered item</code></p>
+            <p><strong>Links:</strong> <code>[text](url)</code></p>
+            <p><strong>Images:</strong> <code>![alt text](image url)</code></p>
+            <p><strong>Quotes:</strong> <code>> quote text</code></p>
+            <p><strong>Horizontal Line:</strong> <code>---</code> (or <code>***</code>)</p>
+
+            <div class="nav-instructions">
+                <p><strong>Editor Navigation & Key Actions:</strong></p>
+                <ul>
+                    <li><code>Enter</code>: Creates a new paragraph with appropriate text direction (LTR/RTL).</li>
+                    <li><code>Backspace</code> (at the beginning of a formatted line like a heading or list item): Converts the line back to its Markdown source.</li>
+                </ul>
+            </div>
+        </div>
     </div>
 
-    <div>
-        <h3>Syntax Guide</h3>
-        <p><strong>Headers:</strong> <code># H1</code>, <code>## H2</code>, <code>### H3</code>, <code>#### H4</code>, <code>##### H5</code>, <code>###### H6</code></p>
-        <p><strong>Text Formatting:</strong> <code>**bold**</code>, <code>*italic*</code>, <code>__underline__</code>, <code>`code`</code></p>
-        <p><strong>Lists:</strong> <code>- unordered item</code>, <code>1. ordered item</code></p>
-        <p><strong>Checkboxes:</strong> <code>[ ] unchecked</code>, <code>[x] checked</code></p>
-        <p><strong>Links:</strong> <code>[text](url)</code></p>
-        <p><strong>Images:</strong> <code>![alt text](image url)</code></p>
-        <p><strong>Quotes:</strong> <code>> quote text</code></p>
-        <p><strong>Horizontal Line:</strong> <code>---</code></p>
-        <p style="background-color: rgb(208, 208, 208);"><strong>Navigation:</strong> <code>→</code> Right arrow to exit current tag, <code>↓</code> Down arrow to move to new line, <code>Backspace</code> at end to revert to markdown</p>
-    </div>
-
-    <script src="wysiwyg-markdown-editor.js"></script>
+    <!-- Ensure the path to the bundle is correct based on your Webpack output -->
+    <script src="./dist/wysiwyg-markdown-editor.bundle.js"></script>
     <script>
-        const editor = MarkdownEditor.init('my-editor', {
-            placeholder: 'Start typing markdown...',
-            autofocus: true
+        document.addEventListener('DOMContentLoaded', () => {
+            const editor = MarkdownEditor.init('my-editor', {
+                // placeholder: 'Start typing markdown...', // Placeholder is now set via data-placeholder attribute
+                // autofocus: true // Browser default behavior might handle this if the div is focusable (e.g. by setting tabindex="0")
+                                 // Or, the editor class could handle this option.
+            });
+            // If you want to autofocus programmatically:
+            // document.getElementById('my-editor').focus();
         });
     </script>
 </body>
