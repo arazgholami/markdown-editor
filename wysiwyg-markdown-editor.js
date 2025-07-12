@@ -193,8 +193,8 @@ class MarkdownEditor {
     }
 
     handleKeyUp(e) {
-        if (e.key === 'ArrowRight') {
-            this.handleArrowRight();
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+            this.handleArrowEscape();
         }
     }
 
@@ -254,7 +254,6 @@ class MarkdownEditor {
     }
 
     createInlineCode(text, match, textNode) {
-        console.log(text, match, textNode);
         const code = document.createElement('code');
         code.setAttribute('dir', 'auto');
         code.textContent = match[1];
@@ -414,7 +413,7 @@ createCheckbox(content, textNode, checked = false) {
             const textContent = range.startContainer.textContent;
             if (range.startOffset === textContent.length && this.isStyledElement(element)) {
                 e.preventDefault();
-                this.convertToMarkdown(element);
+                this.convertToPlain(element);
                 return;
             }
         } else if (range.startContainer.nodeType === Node.ELEMENT_NODE) {
@@ -423,7 +422,7 @@ createCheckbox(content, textNode, checked = false) {
                 const textNode = element.firstChild;
                 if (textNode && textNode.nodeType === Node.TEXT_NODE && range.startOffset === textNode.textContent.length) {
                     e.preventDefault();
-                    this.convertToMarkdown(element);
+                    this.convertToPlain(element);
                     return;
                 }
             }
@@ -437,7 +436,7 @@ createCheckbox(content, textNode, checked = false) {
         }
     }
 
-    handleArrowRight() {
+    handleArrowEscape() {
         const selection = window.getSelection();
         if (selection.rangeCount === 0) return;
 
@@ -453,11 +452,32 @@ createCheckbox(content, textNode, checked = false) {
         return ['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'STRONG', 'EM', 'U', 'CODE', 'LI', 'BLOCKQUOTE', 'A', 'IMG', 'HR'].includes(element.tagName);
     }
 
-    convertToMarkdown(element) {
+    convertToPlain(element) {
         const text = element.textContent;
-        let markdown = '';
+        const plain = text;
 
-        switch (element.tagName) {
+        if (element.tagName === 'LI') {
+            const parentList = element.parentElement;
+            const div = document.createElement('div');
+            div.setAttribute('dir', 'auto');
+            div.textContent = plain;
+            if (parentList.nextSibling) {
+                parentList.parentNode.insertBefore(div, parentList.nextSibling);
+            } else {
+                parentList.parentNode.appendChild(div);
+            }
+            parentList.removeChild(element);
+            if (parentList.children.length === 0) {
+                parentList.parentNode.removeChild(parentList);
+            }
+            this.setCursorAtEnd(div.childNodes[0] || div);
+            return;
+        }
+
+        const textNode = document.createTextNode(plain);
+        element.parentNode.replaceChild(textNode, element);
+        this.setCursorAtEnd(textNode);
+    }
             case 'H1': markdown = `# ${text}`; break;
             case 'H2': markdown = `## ${text}`; break;
             case 'H3': markdown = `### ${text}`; break;
@@ -506,10 +526,7 @@ createCheckbox(content, textNode, checked = false) {
                 return; 
         }
 
-        const textNode = document.createTextNode(markdown);
-        element.parentNode.replaceChild(textNode, element);
 
-        this.setCursorAtEnd(textNode);
     }
 
     setCursorAtEnd(element) {
