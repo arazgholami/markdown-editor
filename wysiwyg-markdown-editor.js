@@ -478,56 +478,6 @@ createCheckbox(content, textNode, checked = false) {
         element.parentNode.replaceChild(textNode, element);
         this.setCursorAtEnd(textNode);
     }
-            case 'H1': markdown = `# ${text}`; break;
-            case 'H2': markdown = `## ${text}`; break;
-            case 'H3': markdown = `### ${text}`; break;
-            case 'H4': markdown = `#### ${text}`; break;
-            case 'H5': markdown = `##### ${text}`; break;
-            case 'H6': markdown = `###### ${text}`; break;
-            case 'STRONG': markdown = `**${text}**`; break;
-            case 'EM': markdown = `*${text}*`; break;
-            case 'U': markdown = `__${text}__`; break;
-            case 'CODE': markdown = `\`${text}\``; break;
-            case 'BLOCKQUOTE': markdown = `> ${text}`; break;
-            case 'A': markdown = `[${text}](${element.href})`; break;
-            case 'IMG': markdown = `![${element.alt}](${element.src})`; break;
-            case 'HR': markdown = `---`; break;
-            case 'LI':
-                const parentList = element.parentElement;
-                const parentTag = parentList.tagName;
-                if (parentTag === 'OL') {
-                    markdown = `1. ${text}`;
-                } else {
-                    markdown = `- ${text}`;
-                }
-                
-                
-                const div = document.createElement('div');
-                div.setAttribute('dir', 'auto');
-                const textNode = document.createTextNode(markdown);
-                div.appendChild(textNode);
-                
-                
-                if (parentList.nextSibling) {
-                    parentList.parentNode.insertBefore(div, parentList.nextSibling);
-                } else {
-                    parentList.parentNode.appendChild(div);
-                }
-                
-                
-                parentList.removeChild(element);
-                
-                
-                if (parentList.children.length === 0) {
-                    parentList.parentNode.removeChild(parentList);
-                }
-                
-                this.setCursorAtEnd(textNode);
-                return; 
-        }
-
-
-    }
 
     setCursorAtEnd(element) {
         const range = document.createRange();
