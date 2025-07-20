@@ -1,6 +1,6 @@
 /**
  * WYSIWYG Markdown Editor
- * v=1.7
+ * v=2.5
  * A lightweight, real-time markdown editor with live rendering and LTR-RTL support
  * Usage: MarkdownEditor.init('your-div-id');
  * Author: Araz Gholami @arazgholami
@@ -26,34 +26,34 @@ class MarkdownEditor {
 
     handleInput(e) {
         if (this.isProcessing) return;
-    
-        
+
+
         const selection = window.getSelection();
         if (selection.rangeCount === 0) return;
-    
+
         const range = selection.getRangeAt(0);
-        
-        
-        if (range.startContainer === this.editor || 
+
+
+        if (range.startContainer === this.editor ||
             (range.startContainer.nodeType === Node.TEXT_NODE && range.startContainer.parentNode === this.editor)) {
             const div = document.createElement('div');
-            div.setAttribute('dir', 'auto');
-            
-            if (range.startContainer.nodeType === Node.TEXT_NODE) {
-                div.appendChild(range.startContainer.cloneNode(true));
-                this.editor.removeChild(range.startContainer);
-            } else {
-                div.innerHTML = '<br>';
-            }
-            this.editor.appendChild(div);
-            this.setCursorAtEnd(div);
-            return;
+        div.setAttribute('dir', 'auto');
+
+        if (range.startContainer.nodeType === Node.TEXT_NODE) {
+            div.appendChild(range.startContainer.cloneNode(true));
+            this.editor.removeChild(range.startContainer);
+        } else {
+            div.innerHTML = '<br>';
         }
-    
-        const textContent = range.startContainer.textContent || '';
-        const cursorPos = range.startOffset;
-    
-        this.processMarkdown(textContent, cursorPos, range);
+        this.editor.appendChild(div);
+        this.setCursorAtEnd(div);
+        return;
+            }
+
+            const textContent = range.startContainer.textContent || '';
+            const cursorPos = range.startOffset;
+
+            this.processMarkdown(textContent, cursorPos, range);
     }
 
     handleKeyDown(e) {
@@ -63,51 +63,45 @@ class MarkdownEditor {
             e.preventDefault();
             const selection = window.getSelection();
             if (selection.rangeCount === 0) return;
-
+    
             const range = selection.getRangeAt(0);
             const textContent = range.startContainer.textContent || '';
-            
+    
             if (textContent.trim() === '---') {
                 this.createHorizontalRule(range.startContainer);
                 return;
             }
-
-            // Handle Shift+Enter in blockquotes
+    
             if (e.shiftKey) {
                 let currentElement = range.startContainer;
                 if (currentElement.nodeType === Node.TEXT_NODE) {
                     currentElement = currentElement.parentElement;
                 }
-                
+    
                 if (currentElement.tagName === 'BLOCKQUOTE') {
                     const br = document.createElement('br');
                     if (range.startContainer.nodeType === Node.TEXT_NODE) {
                         const text = range.startContainer.textContent;
                         const beforeText = text.substring(0, range.startOffset);
                         const afterText = text.substring(range.startOffset);
-                        
-                        // Create new text nodes for before and after text
+    
                         const beforeNode = document.createTextNode(beforeText);
                         const afterNode = document.createTextNode(afterText);
-                        
-                        // Replace the original text node with our new nodes and br
+    
                         const parent = range.startContainer.parentNode;
                         parent.replaceChild(beforeNode, range.startContainer);
                         parent.insertBefore(br, beforeNode.nextSibling);
-                        
-                        // Add non-breaking space after br
+    
                         const nbsp = document.createTextNode('\u00A0');
                         parent.insertBefore(nbsp, br.nextSibling);
                         parent.insertBefore(afterNode, nbsp.nextSibling);
-                        
-                        // Set cursor position after the nbsp
+    
                         range.setStart(afterNode, 0);
                         range.setEnd(afterNode, 0);
                         selection.removeAllRanges();
                         selection.addRange(range);
                     } else {
                         currentElement.appendChild(br);
-                        // Add non-breaking space after br
                         const nbsp = document.createTextNode('\u00A0');
                         currentElement.appendChild(nbsp);
                         this.setCursorAfter(nbsp);
@@ -115,79 +109,110 @@ class MarkdownEditor {
                     return;
                 }
             }
-            
+    
+            if (range.startContainer.nodeType === Node.TEXT_NODE) {
+                const textNode = range.startContainer;
+                const offset = range.startOffset;
+    
+                const beforeText = textNode.textContent.substring(0, offset);
+                const afterText = textNode.textContent.substring(offset);
+    
+                const newDiv = document.createElement('div');
+                newDiv.setAttribute('dir', 'auto');
+                if (afterText.length > 0) {
+                    newDiv.textContent = afterText;
+                } else {
+                    newDiv.innerHTML = '<br>';
+                }
+    
+                let parentBlock = textNode.parentNode;
+                while (parentBlock && parentBlock.parentNode !== this.editor) {
+                    parentBlock = parentBlock.parentNode;
+                }
+    
+                if (parentBlock && parentBlock.parentNode === this.editor) {
+                    if (parentBlock.nextSibling) {
+                        this.editor.insertBefore(newDiv, parentBlock.nextSibling);
+                    } else {
+                        this.editor.appendChild(newDiv);
+                    }
+                } else {
+                    this.editor.appendChild(newDiv);
+                }
+    
+                textNode.textContent = beforeText;
+                this.setCursorAtStart(newDiv);
+                return;
+            }
+    
             let currentElement = range.startContainer;
             if (currentElement.nodeType === Node.TEXT_NODE) {
                 currentElement = currentElement.parentElement;
             }
-            
-            const listItem = currentElement.tagName === 'LI' ? currentElement : 
-                           currentElement.parentElement?.tagName === 'LI' ? currentElement.parentElement : null;
-            
+    
+            const listItem = currentElement.tagName === 'LI' ? currentElement :
+            currentElement.parentElement?.tagName === 'LI' ? currentElement.parentElement : null;
+    
             if (listItem) {
-                if (listItem.textContent.trim() === '' || 
+                if (listItem.textContent.trim() === '' ||
                     (listItem.childNodes.length === 1 && listItem.firstChild.nodeName === 'BR')) {
                     const div = document.createElement('div');
-                    div.setAttribute('dir', 'auto');
-                    div.innerHTML = '<br>';
-                    
-                    const list = listItem.parentNode;
-                    list.removeChild(listItem);
-                    
-                    if (list.children.length === 0) {
-                        list.parentNode.removeChild(list);
-                    }
-                    
-                    if (list.nextSibling) {
-                        list.parentNode.insertBefore(div, list.nextSibling);
-                    } else {
-                        list.parentNode.appendChild(div);
-                    }
-                    
-                    this.setCursorAtEnd(div);
-                    return;
-                }
-
-                const newLi = document.createElement('li');
-                newLi.setAttribute('dir', 'auto');
-                newLi.innerHTML = '<br>';
-                
+                div.setAttribute('dir', 'auto');
+                div.innerHTML = '<br>';
+    
                 const list = listItem.parentNode;
-                if (listItem.nextSibling) {
-                    list.insertBefore(newLi, listItem.nextSibling);
-                } else {
-                    list.appendChild(newLi);
+                list.removeChild(listItem);
+    
+                if (list.children.length === 0) {
+                    list.parentNode.removeChild(list);
                 }
-                
-                this.setCursorAtEnd(newLi);
+    
+                if (list.nextSibling) {
+                    list.parentNode.insertBefore(div, list.nextSibling);
+                } else {
+                    list.parentNode.appendChild(div);
+                }
+    
+                this.setCursorAtEnd(div);
                 return;
+                    }
+    
+                    const newLi = document.createElement('li');
+                    newLi.setAttribute('dir', 'auto');
+                    newLi.innerHTML = '<br>';
+    
+                    const list = listItem.parentNode;
+                    if (listItem.nextSibling) {
+                        list.insertBefore(newLi, listItem.nextSibling);
+                    } else {
+                        list.appendChild(newLi);
+                    }
+    
+                    this.setCursorAtEnd(newLi);
+                    return;
             }
-
-            
+    
             const div = document.createElement('div');
             div.setAttribute('dir', 'auto');
             div.innerHTML = '<br>';
-            
+    
             let container = range.startContainer;
             while (container && container !== this.editor && container.parentNode !== this.editor) {
                 container = container.parentNode;
             }
-            
+    
             if (container === this.editor) {
-                
                 this.editor.appendChild(div);
             } else if (container && container.parentNode === this.editor) {
-                
                 if (container.nextSibling) {
                     this.editor.insertBefore(div, container.nextSibling);
                 } else {
                     this.editor.appendChild(div);
                 }
             } else {
-                
                 this.editor.appendChild(div);
             }
-            
+    
             this.setCursorAtEnd(div);
         }
     }
@@ -291,22 +316,22 @@ class MarkdownEditor {
         this.setCursorAfter(element);
     }
 
-    
+
     createListItem(content, textNode) {
         const li = document.createElement('li');
         li.setAttribute('dir', 'auto');
         li.textContent = content;
 
         const parent = textNode.parentNode;
-        
+
         let ul = null;
-        
-        
+
+
         if (parent.previousElementSibling && parent.previousElementSibling.tagName === 'UL') {
             ul = parent.previousElementSibling;
         }
-        
-        
+
+
         if (!ul) {
             ul = document.createElement('ul');
             ul.setAttribute('dir', 'auto');
@@ -319,7 +344,7 @@ class MarkdownEditor {
         this.setCursorAtEnd(li);
     }
 
-    
+
     createOrderedListItem(content, textNode) {
         const li = document.createElement('li');
         li.setAttribute('dir', 'auto');
@@ -327,11 +352,11 @@ class MarkdownEditor {
 
         const parent = textNode.parentNode;
         let ol = null;
-        
+
         if (parent.previousElementSibling && parent.previousElementSibling.tagName === 'OL') {
             ol = parent.previousElementSibling;
         }
-        
+
         if (!ol) {
             ol = document.createElement('ol');
             ol.setAttribute('dir', 'auto');
@@ -344,28 +369,24 @@ class MarkdownEditor {
         this.setCursorAtEnd(li);
     }
 
-createCheckbox(content, textNode, checked = false) {
-    const checkbox = document.createElement('input');
-    checkbox.setAttribute('dir', 'auto');
-    checkbox.type = 'checkbox';
-    if (checked) {
-        checkbox.setAttribute('checked', '');
-        checkbox.checked = checked;
+    createCheckbox(content, textNode, checked = false) {
+        const checkbox = document.createElement('input');
+        checkbox.setAttribute('dir', 'auto');
+        checkbox.type = 'checkbox';
+        if (checked) {
+            checkbox.setAttribute('checked', '');
+            checkbox.checked = true;
+        }
+
+        const labelText = document.createTextNode(content);
+
+        const parent = textNode.parentNode;
+        parent.insertBefore(checkbox, textNode);
+        parent.insertBefore(labelText, textNode);
+        parent.removeChild(textNode);
+
+        this.setCursorAfter(labelText);
     }
-
-    const textSpan = document.createElement('span');
-    textSpan.setAttribute('dir', 'auto');
-    textSpan.textContent = ' ' + content;
-
-    const parent = textNode.parentNode;
-    
-    // Insert checkbox and text span directly
-    parent.insertBefore(checkbox, textNode);
-    parent.insertBefore(textSpan, textNode);
-    parent.removeChild(textNode);
-
-    this.setCursorAfter(textSpan);
-}
 
     createLink(text, url, fullText, textNode) {
         const link = document.createElement('a');
@@ -390,15 +411,15 @@ createCheckbox(content, textNode, checked = false) {
 
     createHorizontalRule(textNode) {
         const hr = document.createElement('hr');
-        
+
         const parent = textNode.parentNode;
         parent.replaceChild(hr, textNode);
-        
+
         const div = document.createElement('div');
         div.setAttribute('dir', 'auto');
         div.innerHTML = '<br>';
         parent.insertBefore(div, hr.nextSibling);
-        
+
         this.setCursorAtEnd(div);
     }
 
@@ -505,6 +526,25 @@ createCheckbox(content, textNode, checked = false) {
         selection.addRange(range);
     }
 
+    /**
+     * Place the caret at the beginning of the given element or text node.
+     * @param {Node} element
+     */
+    setCursorAtStart(element) {
+        const range = document.createRange();
+        const selection = window.getSelection();
+
+        if (element.nodeType === Node.TEXT_NODE) {
+            range.setStart(element, 0);
+        } else {
+            range.selectNodeContents(element);
+            range.collapse(true);
+        }
+
+        selection.removeAllRanges();
+        selection.addRange(range);
+    }
+
     static init(elementId, options = {}) {
         const element = document.getElementById(elementId);
         if (!element) {
@@ -515,7 +555,7 @@ createCheckbox(content, textNode, checked = false) {
         element.setAttribute('contenteditable', 'true');
         element.setAttribute('spellcheck', 'false');
         element.setAttribute('dir', 'auto');
-        
+
         if (options.placeholder) {
             element.setAttribute('placeholder', options.placeholder);
         }
@@ -533,7 +573,7 @@ document.addEventListener('DOMContentLoaded', () => {
     autoElements.forEach(element => {
         const options = {
             placeholder: element.getAttribute('placeholder'),
-            autofocus: element.getAttribute('data-autofocus') !== 'false'
+                         autofocus: element.getAttribute('data-autofocus') !== 'false'
         };
         MarkdownEditor.init(element.id, options);
     });

@@ -3,31 +3,316 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Markdown Editor Usage Example</title>
-    <style>.markdown-editor { border: 1px solid #ccc; border-radius: 4px; padding: 15px; min-height: 300px; font-family: 'Courier New', monospace; line-height: 1.6; outline: none; background: #fafafa; } .markdown-editor:focus { border-color: #007cba; box-shadow: 0 0 0 2px rgba(0, 124, 186, 0.1); } .markdown-editor[data-placeholder]:empty::before { content: attr(data-placeholder); color: #999; font-style: italic; } /* Styling for rendered markdown elements */ .markdown-editor h1, .markdown-editor h2, .markdown-editor h3, .markdown-editor h4, .markdown-editor h5, .markdown-editor h6 { margin: 0.5em 0; font-weight: bold; } .markdown-editor h1 { font-size: 2em; } .markdown-editor h2 { font-size: 1.5em; } .markdown-editor h3 { font-size: 1.3em; } .markdown-editor h4 { font-size: 1.1em; } .markdown-editor h5 { font-size: 1em; } .markdown-editor h6 { font-size: 0.9em; } .markdown-editor blockquote { border-left: 4px solid #ddd; margin: 0; padding-left: 15px; color: #666; font-style: italic; } .markdown-editor code { background: #f4f4f4; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', monospace; font-size: 0.9em; } .markdown-editor strong { font-weight: bold; } .markdown-editor em { font-style: italic; } .markdown-editor u { text-decoration: underline; } .markdown-editor ul, .markdown-editor ol { margin: 0.5em 0; padding-left: 20px; } .markdown-editor li { margin: 0.2em 0; } .markdown-editor a { color: #007cba; text-decoration: underline; } .markdown-editor a:hover { text-decoration: none; } .markdown-editor img { max-width: 100%; height: auto; } .markdown-editor hr { border: none; border-top: 2px solid #ddd; margin: 1em 0; } .markdown-editor input[type="checkbox"] { margin-right: 8px; } .container { max-width: 800px; margin: 50px auto; padding: 20px; } .example { margin-bottom: 40px; padding: 20px; border: 1px solid #eee; border-radius: 8px; } .example h3 { margin-top: 0; color: #333; } .code-example { background: #f8f8f8; padding: 10px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 0.9em; margin: 10px 0; } </style>
+    <title>Modern Markdown Editor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-light: #eef2ff;
+            --gray-100: #f9fafb;
+            --gray-200: #f3f4f6;
+            --gray-300: #e5e7eb;
+            --gray-700: #374151;
+            --gray-900: #111827;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            line-height: 1.6;
+            color: var(--gray-900);
+            background-color: #ffffff;
+            padding: 2rem 1rem;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            color: #6b7280;
+            font-size: 1.1rem;
+        }
+        
+        .editor-container {
+            background: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            overflow: hidden;
+            margin-bottom: 2.5rem;
+        }
+        
+        .markdown-editor {
+            width: 100%;
+            min-height: 300px;
+            padding: 1.5rem;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 1rem;
+            line-height: 1.7;
+            color: var(--gray-900);
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            outline: none;
+            resize: vertical;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        
+        .markdown-editor:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+        
+        .markdown-editor[data-placeholder]:empty::before {
+            content: attr(data-placeholder);
+            color: #9ca3af;
+            font-style: italic;
+        }
+        
+        /* Markdown element styles */
+        .markdown-editor h1 { font-size: 2em; margin: 1em 0 0.5em; font-weight: 700; }
+        .markdown-editor h2 { font-size: 1.5em; margin: 0.9em 0 0.5em; font-weight: 600; }
+        .markdown-editor h3 { font-size: 1.3em; margin: 0.8em 0 0.5em; font-weight: 600; }
+        .markdown-editor h4, .markdown-editor h5, .markdown-editor h6 { margin: 0.7em 0 0.5em; font-weight: 600; }
+        
+        .markdown-editor blockquote {
+            border-left: 4px solid var(--primary);
+            margin: 1em 0;
+            padding: 0.5em 1em;
+            background: var(--primary-light);
+            border-radius: 0 4px 4px 0;
+        }
+        
+        .markdown-editor code {
+            background: var(--gray-100);
+            padding: 0.2em 0.4em;
+            border-radius: 4px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 0.9em;
+            color: #dc2626;
+        }
+        
+        .markdown-editor pre {
+            background: var(--gray-100);
+            padding: 1em;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 1em 0;
+        }
+        
+        .markdown-editor pre code {
+            background: transparent;
+            padding: 0;
+            color: inherit;
+        }
+        
+        .markdown-editor ul, .markdown-editor ol {
+            margin: 0.8em 0;
+            padding-left: 1.8em;
+        }
+        
+        .markdown-editor li {
+            margin: 0.4em 0;
+        }
+        
+        .markdown-editor a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+        
+        .markdown-editor a:hover {
+            border-bottom-color: currentColor;
+        }
+        
+        .markdown-editor img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 6px;
+            margin: 1em 0;
+        }
+        
+        .markdown-editor hr {
+            border: none;
+            border-top: 1px solid var(--gray-200);
+            margin: 1.5em 0;
+        }
+        
+        .markdown-editor input[type="checkbox"] {
+            margin-right: 8px;
+        }
+        
+        .documentation {
+            background: var(--gray-50);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-top: 3rem;
+        }
+        
+        .documentation h2 {
+            margin-bottom: 1.5rem;
+            color: var(--gray-900);
+        }
+        
+        .syntax-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        
+        .syntax-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.25rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--gray-200);
+        }
+        
+        .syntax-card h3 {
+            font-size: 1rem;
+            margin-bottom: 0.75rem;
+            color: var(--gray-900);
+        }
+        
+        .syntax-card p {
+            color: var(--gray-700);
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        
+        .syntax-card code {
+            background: var(--gray-100);
+            padding: 0.2em 0.4em;
+            border-radius: 4px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 0.85em;
+            color: #dc2626;
+        }
+        
+        .usage {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            border: 1px solid var(--gray-200);
+            overflow-x: auto;
+        }
+        
+        .usage pre {
+            margin: 0;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+            
+            .syntax-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .markdown-editor {
+                min-height: 250px;
+            }
+        }
+    </style>
 </head>
 <body>
-
-    <div id="my-editor" class="markdown-editor">
+    <div class="container">
+        <header>
+            <h1>Markdown Editor</h1>
+            <p class="subtitle">A clean, modern WYSIWYG markdown editor</p>
+        </header>
+        
+        <div class="editor-container">
+            <div id="my-editor" class="markdown-editor" data-placeholder="Start writing in markdown..."></div>
+        </div>
+        
+        <div class="documentation">
+            <h2>Getting Started</h2>
+            <div class="usage">
+                <pre><code>&lt;script src="https://raw.githubusercontent.com/arazgholami/markdown-editor/main/wysiwyg-markdown-editor.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+    const editor = MarkdownEditor.init('my-editor', {
+        placeholder: 'Start typing markdown...',
+        autofocus: true
+    });
+&lt;/script&gt;</code></pre>
+            </div>
+            
+            <h2>Markdown Syntax</h2>
+            <div class="syntax-grid">
+                <div class="syntax-card">
+                    <h3>Navigation</h3>
+                    <p><code>→</code> Right arrow to exit current tag</p>
+                    <p><code>Backspace</code> at end to revert to markdown</p>
+                </div>
+                
+                <div class="syntax-card">
+                    <h3>Headers</h3>
+                    <p><code># H1</code></p>
+                    <p><code>## H2</code></p>
+                    <p><code>### H3</code></p>
+                    <p><code>#### H4</code> to <code>###### H6</code></p>
+                </div>
+                
+                <div class="syntax-card">
+                    <h3>Text Formatting</h3>
+                    <p><code>**bold**</code></p>
+                    <p><code>*italic*</code></p>
+                    <p><code>__underline__</code></p>
+                    <p><code>`code`</code></p>
+                </div>
+                
+                <div class="syntax-card">
+                    <h3>Lists</h3>
+                    <p><code>- Unordered item</code></p>
+                    <p><code>1. Ordered item</code></p>
+                    <p><code>- [ ] Task</code></p>
+                    <p><code>- [x] Completed</code></p>
+                </div>
+                
+                <div class="syntax-card">
+                    <h3>Links & Media</h3>
+                    <p><code>[text](url)</code></p>
+                    <p><code>![alt](image.jpg)</code></p>
+                </div>
+                
+                <div class="syntax-card">
+                    <h3>Other</h3>
+                    <p><code>> Blockquote</code></p>
+                    <p><code>---</code> Horizontal rule</p>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div>
-        <h3>Syntax Guide</h3>
-        <p><strong>Headers:</strong> <code># H1</code>, <code>## H2</code>, <code>### H3</code>, <code>#### H4</code>, <code>##### H5</code>, <code>###### H6</code></p>
-        <p><strong>Text Formatting:</strong> <code>**bold**</code>, <code>*italic*</code>, <code>__underline__</code>, <code>`code`</code></p>
-        <p><strong>Lists:</strong> <code>- unordered item</code>, <code>1. ordered item</code></p>
-        <p><strong>Checkboxes:</strong> <code>[ ] unchecked</code>, <code>[x] checked</code></p>
-        <p><strong>Links:</strong> <code>[text](url)</code></p>
-        <p><strong>Images:</strong> <code>![alt text](image url)</code></p>
-        <p><strong>Quotes:</strong> <code>> quote text</code></p>
-        <p><strong>Horizontal Line:</strong> <code>---</code></p>
-        <p style="background-color: rgb(208, 208, 208);"><strong>Navigation:</strong> <code>→</code> Right arrow to exit current tag, <code>↓</code> Down arrow to move to new line, <code>Backspace</code> at end to revert to markdown</p>
-    </div>
-
-    <script src="wysiwyg-markdown-editor.js"></script>
+    <script src="wysiwyg-markdown-editor.js?v=2.0"></script>
     <script>
         const editor = MarkdownEditor.init('my-editor', {
-            placeholder: 'Start typing markdown...',
+            placeholder: 'Start writing in markdown...',
             autofocus: true
         });
     </script>
