@@ -1,4 +1,4 @@
-# Modern Markdown Editor
+# Modern Markdown Editor 3.0
 
 A clean, lightweight, and intuitive WYSIWYG markdown editor with real-time preview and modern UI.
 
